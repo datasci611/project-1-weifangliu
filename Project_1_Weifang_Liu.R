@@ -5,6 +5,7 @@ data(chickwts)
 data(Nile)
 data(sleep)
 
+# Air quality data
 # use as.tibble to change the data format to something more compatible with tidyverse tools
 tairquality <- as.tibble(airquality)
 # use gglot2 to make a figure using the data set
@@ -19,6 +20,7 @@ ggplot(data = tairquality, mapping = aes(x = Ozone)) +
 by_month <- group_by(tairquality, Month)
 summarise(by_month, ozone = mean(Ozone, na.rm = T))
 
+# Chicken weights data
 tchickwts <- as.tibble(chickwts)
 ggplot(data = tchickwts, mapping = aes( x = feed, y = weight)) +
   geom_boxplot() +
@@ -30,6 +32,7 @@ ggplot(data = tchickwts, mapping = aes( x = feed, y = weight)) +
 by_feed <- group_by(tchickwts, feed)
 summarise(by_feed, weight = median(weight, na.rm = T))
 
+# Nile river data
 tNile <- as.tibble(Nile) %>%
   mutate(year = 1871:1970) 
 
@@ -47,6 +50,7 @@ after_1898 <- tNile %>%
 mean(before_1898$x)
 mean(after_1898$x)
 
+# Student sleep data
 tsleep <- as.tibble(sleep)
 ggplot(data = tsleep, mapping = aes(x = group, y = extra)) +
   geom_boxplot() +
