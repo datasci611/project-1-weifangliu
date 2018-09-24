@@ -1,0 +1,163 @@
+---
+title: "Bios 611 Project 1"
+author: "Weifang Liu"
+date: "9/24/2018"
+output: html_document
+---
+
+```{r message=FALSE}
+library(tidyverse)
+library(tidyr)
+data(airquality)
+data(chickwts)
+data(Nile)
+data(sleep)
+```
+
+In this blog post, I will analyze four existing datasets in R: 
+
+* airquality              New York air quality measurements
+* chickwts:                chicken weights by feed type
+* Nile:                   flow of the river Nile
+* sleep:                   student's sleep data
+
+### New York air quality measurements
+
+This dataset is from the "airquality" data set in R, which contains information about daily air quality measurements in New York, May 1 to September 30, 1973. It has 154 observations and 6 variables:
+
+* Month (1-12) and Day (1-31)
+
+* Ozone: Mean ozone in parts per billion (ppb) from 13:00 to 15:00 hours at Roosevelt Island
+
+* Solar.R: Solar radiation in Langleys (lang) in the frequency band 4000-7700 Angstroms from 08:00 to 12:00 hours at Central Park
+
+* Wind: Average wind speed in miles per hour (mph) at 07:00 and 10:00 hours at LaGuardia Airport
+
+* Temp: Maximum daily temperature in degrees Fahrenheit (F) at La Guardia Airport.
+
+```{r message=FALSE, warning=FALSE}
+# use as.tibble to change the data format to something more compatible with tidyverse tools
+tairquality <- as.tibble(airquality)
+# use gglot2 to make a figure using the data set
+ggplot(data = tairquality, mapping = aes(x = Ozone)) +
+  geom_histogram(aes(y=..density..), color="black", fill="white") +
+  geom_density(alpha=.2, fill="darkcyan") +
+  facet_wrap(~ Month, nrow = 2) +
+  xlab('Mean ozone in ppb') +
+  ylab("Density") +
+  ggtitle("Plot of ozone by month")
+```
+
+The graph above shows the density of ozone level in ppb by month. We can see that the plots for May, June, and September are centered around lower ozone levels and the plots for July and August are more spread out and seem to have higher ozone levels on average. We may say from this figure that ozone levels tend to be higher during the summer season, particularly in July and August.
+
+```{r}
+by_month <- group_by(tairquality, Month)
+summarise(by_month, ozone = mean(Ozone, na.rm = T))
+```
+
+To confirm what we observe in the graph, we group the data by month and calculate the mean ozone level for each month. As we can see from the results above, ozone levels in July and August are above 59 ppb, which are significantly higher than other months. May has a lowest average ozone level of 23.6 ppb, and then the ozone level increases in June. In September average ozone decreases to 31.4 ppb. We conclude that average ozone is higher in July and August and lower in May, June, and September.
+
+As a next step, it would be interesting to look at how other variables like solar radiation, temperature, and wind are correlated with ozone, and if the relationships differ by month.
+
+### Chicken weights by feed type data
+
+This dataset is from the "chickwts" data set in R, which is about an experiment that was conducted to measure and compare the effectiveness of various feed supplements on the growth rate of chickens. It contains two variables:
+
+* weight: a numeric variable giving the chick weight in grams.
+
+* feed: a factor giving the feed type.
+
+
+```{r warning=FALSE}
+tchickwts <- as.tibble(chickwts)
+
+ggplot(data = tchickwts, mapping = aes( x = feed, y = weight)) +
+  geom_boxplot() +
+  coord_flip() +
+  ylab('weight in grams') +
+  xlab("feed type") +
+  ggtitle("Boxplot of chicken weights by feed type")
+```
+
+The boxplot shows the distribution of chicken weights in gram by feed type. As we can see, chickens that were fed with sunflower and casein have higher weights and then followed by meatmeal, soybean, linseed, and horsebean. The spreads of weights are narrower for sunflower and horsebean, and wider for the rest. 
+
+```{r}
+by_feed <- group_by(tchickwts, feed)
+summarise(by_feed, weight = median(weight, na.rm = T))
+```
+
+If we summarize the data set to find out the group medians, we can confirm the pattern we see in the plot. We can order feed types by chicken weights in a descending order (in medians): casein, sunflower, meatmeal, soybean, linseed, and horsebean.
+
+We can also look at chicken weights after shorter or longer weeks with these feed types (this particular data set is six weeks) if we had more data to see if different feed types have time-various effects.
+
+### Flow of the river Nile
+
+This dataset is from the "Nile" data set in R, which includes measurements of the annual flow of the river Nile at Aswan (formerly Assuan), 1871-1970, in $10^8 m^3$. It is a time series dataset of length 100.
+
+```{r warning=FALSE}
+tNile <- as.tibble(Nile) %>%
+  mutate(year = 1871:1970) 
+```
+
+Since the original data set has only one variable, which is the annual flow of the river Nile, I add a new variable "year" to indicate the time using `mutate`.
+
+```{r message=FALSE,warning=FALSE}
+ggplot(data = tNile, mapping = aes(x = as.numeric(year), y = as.numeric(x))) +
+  geom_line() +
+  geom_smooth() +
+  ylab('flow of the river Nile in 10^8 m^3') +
+  xlab("year") +
+  ggtitle("Plot of annual flow of the river Nile 1871-1970")
+``` 
+
+
+From this plot we can see that there were a lot of fluctuations during the time period and there were significant drops and rises. There seems to be a downward trend from 1870 to 1920 and then trend recovered a little bit but became flatter.
+
+```{r}
+before_1898 <- tNile %>%
+  filter(year < 1898)
+
+after_1898 <- tNile %>%
+  filter(year > 1898)
+
+mean(before_1898$x)
+mean(after_1898$x)
+```
+
+In the description in R documentation, it says that there was "apparent changepoint near 1898" (Cobb(1978), Table 1, p.249). Therefore, I look at the years before and after 1898 and compute their means. The average flow before 1898 is 1097.67 $10^8 m^3$ and after 1898 is 849.97 $10^8 m^3$, which is consistent with the description. The annual flow decreased quite a bit in the 20th century compared to the years before.
+
+The next questions we might ask is whether this seemingly apparent trend is statistically significant or not. We might perform some formal statistical tests to get some conclusions.
+
+### Student's sleep data
+
+This dataset is from the "sleep" data set in R, which shows the effect of two soporific drugs (increase in hours of sleep compared to control) on 10 patients. This is a data frame with 20 observations on 3 variables.
+
+*	extra: a numeric value giving the increase in hours of sleep
+*	group:	a factor variable giving the drug given
+*	ID: patient ID
+
+```{r warning=FALSE}
+tsleep <- as.tibble(sleep)
+
+ggplot(data = tsleep, mapping = aes(x = group, y = extra)) +
+  geom_boxplot() +
+  xlab('Drug given') +
+  ylab("Increase in hours of sleep") +
+  ggtitle("Boxplot of increase in sleep by drug type")
+```
+
+The above boxplot shows the distribution of increase in hours of sleep by drug given. It is clear that the median of drug 2 is greater than drug 1, but there is overlap between the two groups. It seems that drug 2 works better here.
+
+```{r}
+# Add a new variable to compute the difference for each patient
+sleep_wide <- spread(sleep,group,extra) %>%
+  mutate(diff = `2` - `1`)
+
+sleep_wide$diff
+```
+
+Since two drugs were given to all of the 10 patients, we can actually look at the same patient and compare the effects of two drugs individually. If we compute the difference of increase in hours of sleep using two drugs for each patient, then we can see for all patients drug 2 did better than drug 1 except for one patient, who had the same increase using both. Therefore, we still observe that drug 2 is more effective than drug 1.
+
+Note that for drug 1, the median is close to 0 and there are some cases where the patients got less sleep. Another question we might be interested in is whether drug 1 is effective in increasing sleep or not.
+
+
